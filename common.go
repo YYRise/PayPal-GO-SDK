@@ -13,10 +13,10 @@ const (
 )
 
 type Patch struct {
-	Op    E_PatchOp `json:"op"`
-	Path  string    `json:"path"`
-	Value string    `json:"value"`
-	From  string    `json:"from,omitempty"`
+	Op    E_PatchOp   `json:"op"`
+	Path  string      `json:"path"`
+	Value interface{} `json:"value"`
+	From  string      `json:"from,omitempty"`
 }
 
 // https://developer.paypal.com/docs/api/subscriptions/v1/#definition-money
@@ -27,10 +27,10 @@ type Money struct {
 
 // https://developer.paypal.com/docs/api/subscriptions/v1/#definition-subscriber
 type Subscriber struct {
-	Name            string           `json:"name,omitempty"` // 只支持 given_name 和 surname
-	EmailAddress    string           `json:"email_address,omitempty"`
-	PayerId         string           `json:"payer_id ,omitempty"` // PayPal为付款人分配的ID, 只读
-	ShippingAddress *ShippingAddress `json:"shipping_address,omitempty"`
+	Name            *Name           `json:"name,omitempty"` // 只支持 given_name 和 surname
+	EmailAddress    string          `json:"email_address,omitempty"`
+	PayerId         string          `json:"payer_id ,omitempty"` // PayPal为付款人分配的ID, 只读
+	ShippingAddress *ShippingDetail `json:"shipping_address,omitempty"`
 }
 
 // https://developer.paypal.com/docs/api/subscriptions/v1/#definition-name
@@ -82,9 +82,8 @@ const (
 )
 
 type ApplicationContext struct {
-	BrandName          string               `json:"brand_name,omitempty"` // 1<=len<=127
-	Locale             string               `json:"locale,omitempty"`     // 2<=len<=10 eg: da-DK, he-IL, id-ID, ja-JP, no-NO, pt-BR, ru-RU, sv-SE, th-TH, zh-CN, zh-HK, or zh-TW
-	LandingPage        string               `json:"landing_page,omitempty"`
+	BrandName          string               `json:"brand_name,omitempty"`          // 1<=len<=127
+	Locale             string               `json:"locale,omitempty"`              // 2<=len<=10 eg: da-DK, he-IL, id-ID, ja-JP, no-NO, pt-BR, ru-RU, sv-SE, th-TH, zh-CN, zh-HK, or zh-TW
 	ShippingPreference E_ShippingPreference `json:"shipping_preference,omitempty"` // Default: GET_FROM_FILE.
 	UserAction         E_UserAction         `json:"user_action,omitempty"`         // Default: SUBSCRIBE_NOW.
 	PaymentMethod      PaymentMethod        `json:"payment_method,omitempty"`
@@ -161,3 +160,58 @@ type LinkDescription struct {
 	Rel    LinkRel `json:"rel"`
 	Method string  `json:"method,omitempty"` // GET, POST, PUT, DELETE, HEAD, CONNECT, OPTIONS, PATCH
 }
+
+// https://developer.paypal.com/docs/api/subscriptions/v1/#definition-billing_cycle
+type BillingCycle struct {
+	PricingScheme *PricingScheme `json:"pricing_scheme"`
+	Frequency     *Frequency     `json:"frequency"` //计费周期的频率详细信息
+	TenureType    E_TenureType   `json:"tenure_type"`
+	Sequence      int            `json:"sequence"`               // [1, 99] 在其他计费周期中，此周期的运行顺序。例如，试用计费周期的序列为1，而常规计费周期的序列为2，因此试用周期在常规周期之前运行。
+	TotalCycles   int            `json:"total_cycles,omitempty"` //[0, 999] 此计费周期运行的次数。试用计费周期对于total_cycles只能有 1 。常规计费周期可以具有无限周期（total_cycles值为 0）或有限数量的周期（total_cycles值介于 1 和 999 之间）。
+}
+
+// https://developer.paypal.com/docs/api/subscriptions/v1/#definition-pricing_scheme
+type PricingScheme struct {
+	Version    int     `json:"version,omitempty"` // [0, 999]
+	FixedPrice *Money  `json:"fixed_price,omitempty"`
+	CreateTime *string `json:"create_time,omitempty"`
+	UpdateTime *string `json:"update_time,omitempty"`
+}
+
+// https://developer.paypal.com/docs/api/subscriptions/v1/#definition-frequency
+type E_FrequencyInterval string
+
+const (
+	E_FREQUENCY_INTERVAL_DAY   E_FrequencyInterval = "DAY"
+	E_FREQUENCY_INTERVAL_WEEK  E_FrequencyInterval = "WEEK"
+	E_FREQUENCY_INTERVAL_MONTH E_FrequencyInterval = "MONTH"
+	E_FREQUENCY_INTERVAL_YEAR  E_FrequencyInterval = "YEAR"
+)
+
+type Frequency struct {
+	IntervalUnit  E_FrequencyInterval `json:"interval_unit"`
+	IntervalCount int                 `json:"interval_count,omitempty"` // Default: 1.
+}
+
+// https://developer.paypal.com/docs/api/subscriptions/v1/#definition-taxes
+
+type Taxes struct {
+	Percentage string `json:"percentage"` //帐单金额的百分比。
+	Inclusive  bool   `json:"inclusive"`  // 指示税金是否已包含在计费金额中。Default: true.
+}
+
+// https://developer.paypal.com/docs/api/subscriptions/v1/#definition-payment_preferences
+type PaymentPreferences struct {
+	AutoBillOutstanding     bool   `json:"auto_bill_outstanding"` // Default: true. 是否\在下一个计费周期中自动计费未结金额。
+	SetupFee                *Money `json:"setup_fee"`
+	SetupFeeFailureAction   string `json:"setup_fee_failure_action"`  //[CONTINUE, CANCEL] Default: CANCEL. 初始付款失败，则对订阅执行的操作。
+	PaymentFailureThreshold int    `json:"payment_failure_threshold"` // Default: 0. 暂停订阅之前的最大付款失败数。
+}
+
+//type ApplicationContext struct {
+//	BrandName          string `json:"brand_name"` // 1<=len<=127
+//	Locale             string `json:"locale"`     // 2<=len<=10 eg: da-DK, he-IL, id-ID, ja-JP, no-NO, pt-BR, ru-RU, sv-SE, th-TH, zh-CN, zh-HK, or zh-TW
+//	LandingPage        string `json:"landing_page"`
+//	ShippingPreference string `json:"shipping_preference"` // GET_FROM_FILE, NO_SHIPPING, SET_PROVIDED_ADDRESS
+//	UserAction         string `json:"user_action"`
+//}
