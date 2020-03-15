@@ -82,7 +82,7 @@ const (
 )
 
 type ApplicationContext struct {
-	BrandName          string               `json:"brand_name,omitempty"`          // 1<=len<=127
+	BrandName          string               `json:"brand_name,omitempty"`          // 1<=len<=127 // 商标
 	Locale             string               `json:"locale,omitempty"`              // 2<=len<=10 eg: da-DK, he-IL, id-ID, ja-JP, no-NO, pt-BR, ru-RU, sv-SE, th-TH, zh-CN, zh-HK, or zh-TW
 	ShippingPreference E_ShippingPreference `json:"shipping_preference,omitempty"` // Default: GET_FROM_FILE.
 	UserAction         E_UserAction         `json:"user_action,omitempty"`         // Default: SUBSCRIBE_NOW.
@@ -208,10 +208,39 @@ type PaymentPreferences struct {
 	PaymentFailureThreshold int    `json:"payment_failure_threshold"` // Default: 0. 暂停订阅之前的最大付款失败数。
 }
 
-//type ApplicationContext struct {
-//	BrandName          string `json:"brand_name"` // 1<=len<=127
-//	Locale             string `json:"locale"`     // 2<=len<=10 eg: da-DK, he-IL, id-ID, ja-JP, no-NO, pt-BR, ru-RU, sv-SE, th-TH, zh-CN, zh-HK, or zh-TW
-//	LandingPage        string `json:"landing_page"`
-//	ShippingPreference string `json:"shipping_preference"` // GET_FROM_FILE, NO_SHIPPING, SET_PROVIDED_ADDRESS
-//	UserAction         string `json:"user_action"`
-//}
+// https://developer.paypal.com/docs/api/subscriptions/v1/#definition-transaction
+/*
+COMPLETED. The funds for this captured payment were credited to the payee's PayPal account.
+DECLINED. The funds could not be captured.
+PARTIALLY_REFUNDED. An amount less than this captured payment's amount was partially refunded to the payer.
+PENDING. The funds for this captured payment was not yet credited to the payee's PayPal account. For more information, see status.details
+REFUNDED. An amount greater than or equal to this captured payment's amount was refunded to the payer.
+*/
+type E_Transaction_Status string
+
+const (
+	E_TRANSACTION_STATUS_COMPLETED          E_Transaction_Status = "COMPLETED"
+	E_TRANSACTION_STATUS_DECLINED                                = "DECLINED"
+	E_TRANSACTION_STATUS_PARTIALLY_REFUNDED                      = "PARTIALLY_REFUNDED"
+	E_TRANSACTION_STATUS_PENDING                                 = "PENDING"
+	E_TRANSACTION_STATUS_REFUNDED                                = "REFUNDED"
+)
+
+type SubTransaction struct {
+	Status              E_Transaction_Status `json:"status"`
+	ID                  string               `json:"id"`
+	AmountWithBreakdown *AmountWithBreakdown `json:"amount_with_breakdown"`
+	PayerName           *Name                `json:"payer_name"`
+	PayerEmail          string               `json:"payer_email"`
+	Time                string               `json:"time"`
+}
+
+// https://developer.paypal.com/docs/api/subscriptions/v1/#definition-amount_with_breakdown
+// 金额的明细详情。包括毛额、税金、费用和运费。
+type AmountWithBreakdown struct {
+	GrossAmount    Money `json:"gross_amount"`
+	FeeAmount      Money `json:"fee_amount"`
+	ShippingAmount Money `json:"shipping_amount"`
+	TaxAmount      Money `json:"tax_amount"`
+	NetAmount      Money `json:"net_amount"`
+}
