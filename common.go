@@ -1,5 +1,7 @@
 package paypalsdk
 
+import "time"
+
 // https://developer.paypal.com/docs/api/subscriptions/v1/#definition-patch
 type E_PatchOp string
 
@@ -27,10 +29,10 @@ type Money struct {
 
 // https://developer.paypal.com/docs/api/subscriptions/v1/#definition-subscriber
 type Subscriber struct {
-	Name            *Name           `json:"name,omitempty"` // 只支持 given_name 和 surname
+	Name            *Name           `json:"name"` // 只支持 given_name 和 surname
 	EmailAddress    string          `json:"email_address,omitempty"`
 	PayerId         string          `json:"payer_id ,omitempty"` // PayPal为付款人分配的ID, 只读
-	ShippingAddress *ShippingDetail `json:"shipping_address,omitempty"`
+	ShippingAddress *ShippingDetail `json:"shipping_address"`
 }
 
 // https://developer.paypal.com/docs/api/subscriptions/v1/#definition-name
@@ -109,8 +111,8 @@ type BillingInfo struct {
 	OutstandingBalance  *Money                `json:"outstanding_balance"`
 	CycleExecutions     []*CycleExecutions    `json:"cycle_executions,omitempty"`
 	LastPayment         *LastPaymentDetails   `json:"last_payment,omitempty"`          //只读
-	NextBillingTime     string                `json:"next_billing_time,omitempty"`     // 只读
-	FinalPaymentTime    string                `json:"final_payment_time,omitempty"`    // 只读
+	NextBillingTime     time.Time             `json:"next_billing_time,omitempty"`     // 只读
+	FinalPaymentTime    time.Time             `json:"final_payment_time,omitempty"`    // 只读
 	FailedPaymentsCount int                   `json:"failed_payments_count,omitempty"` //[0, 999] // 连续付款失败数。成功付款后重置为 0。如果达到payment_failure_threshold值，订阅将更新为"暂停"状态。
 	LastFailedPayment   *FailedPaymentDetails `json:"last_failed_payment,omitempty"`   //只读
 }
@@ -232,7 +234,7 @@ type SubTransaction struct {
 	AmountWithBreakdown *AmountWithBreakdown `json:"amount_with_breakdown"`
 	PayerName           *Name                `json:"payer_name"`
 	PayerEmail          string               `json:"payer_email"`
-	Time                string               `json:"time"`
+	Time                time.Time            `json:"time"`
 }
 
 // https://developer.paypal.com/docs/api/subscriptions/v1/#definition-amount_with_breakdown
@@ -243,4 +245,109 @@ type AmountWithBreakdown struct {
 	ShippingAmount Money `json:"shipping_amount"`
 	TaxAmount      Money `json:"tax_amount"`
 	NetAmount      Money `json:"net_amount"`
+}
+
+/*
+{
+	"id": "WH-8SL75357TR819433G-6074261061594570V",
+	"create_time": "2020-03-15T18:13:00.765Z",
+	"resource_type": "sale",
+	"event_type": "PAYMENT.SALE.COMPLETED",
+	"summary": "Payment completed for $ 4.0 USD",
+	"resource": {
+		"billing_agreement_id": "I-ML3J0B9UHAM8",
+		"amount": {
+			"total": "4.00",
+			"currency": "USD",
+			"details": {
+				"subtotal": "4.00"
+			}
+		},
+		"payment_mode": "INSTANT_TRANSFER",
+		"update_time": "2020-03-15T18:12:45Z",
+		"create_time": "2020-03-15T18:12:45Z",
+		"protection_eligibility_type": "ITEM_NOT_RECEIVED_ELIGIBLE,UNAUTHORIZED_PAYMENT_ELIGIBLE",
+		"transaction_fee": {
+			"value": "0.44",
+			"currency": "USD"
+		},
+		"protection_eligibility": "ELIGIBLE",
+		"links": [
+			{
+				"href": "https://api.sandbox.paypal.com/v1/payments/sale/5C5052428C036462C",
+				"rel": "self",
+				"method": "GET"
+			},
+			{
+				"href": "https://api.sandbox.paypal.com/v1/payments/sale/5C5052428C036462C/refund",
+				"rel": "refund",
+				"method": "POST"
+			}
+		],
+		"id": "5C5052428C036462C",
+		"state": "completed",
+		"invoice_number": ""
+	},
+	"status": "PENDING",
+	"transmissions": [
+		{
+			"webhook_url": "https://paypal.360.cn/paypal_webhook",
+			"transmission_id": "9d62dfd0-66e8-11ea-84f4-336f82814040",
+			"status": "PENDING",
+			"timestamp": "2020-03-15T18:13:04Z"
+		}
+	],
+	"links": [
+		{
+			"href": "https://api.sandbox.paypal.com/v1/notifications/webhooks-events/WH-8SL75357TR819433G-6074261061594570V",
+			"rel": "self",
+			"method": "GET",
+			"encType": "application/json"
+		},
+		{
+			"href": "https://api.sandbox.paypal.com/v1/notifications/webhooks-events/WH-8SL75357TR819433G-6074261061594570V/resend",
+			"rel": "resend",
+			"method": "POST",
+			"encType": "application/json"
+		}
+	],
+	"event_version": "1.0"
+}
+
+*/
+
+//
+type E_SaleState string
+
+const (
+	E_SALE_STATE_COMPLETED          E_SaleState = "completed"
+	E_SALE_STATE_PARTIALLY_REFUNDED E_SaleState = "partially_refunded"
+	E_SALE_STATE_PENDING            E_SaleState = "pending"
+	E_SALE_STATE_REFUNDED           E_SaleState = "refunded"
+	E_SALE_STATE_DENIED             E_SaleState = "denied"
+)
+
+type Sale struct {
+	Id                        string      `json:"id,omitempty"`
+	PurchaseUnitReferenceId   string      `json:"purchase_unit_reference_id,omitempty"`
+	Amount                    *Amount     `json:"amount,omitempty"`
+	PaymentMode               string      `json:"payment_mode,omitempty"`
+	State                     E_SaleState `json:"state,omitempty"`
+	ReasonCode                string      `json:"reason_code,omitempty"`
+	ProtectionEligibility     string      `json:"protection_eligibility,omitempty"`
+	ProtectionEligibilityType string      `json:"protection_eligibility_type,omitempty"`
+	ClearingTime              string      `json:"clearing_time,omitempty"`
+	PaymentHoldStatus         string      `json:"payment_hold_status,omitempty"`
+	TransactionFee            *Currency   `json:"transaction_fee,omitempty"`
+	ReceivableAmount          *Currency   `json:"receivable_amount,omitempty"`
+	ExchangeRate              string      `json:"exchange_rate,omitempty"`
+	ReceiptId                 string      `json:"receipt_id,omitempty"`
+	ParentPayment             string      `json:"parent_payment,omitempty"`
+	BillingAgreementId        string      `json:"billing_agreement_id,omitempty"`
+	CreateTime                string      `json:"create_time,omitempty"`
+	UpdateTime                string      `json:"update_time,omitempty"`
+	Links                     []*Link     `json:"links,omitempty,omitempty"`
+	InvoiceNumber             string      `json:"invoice_number,omitempty"`
+	Custom                    string      `json:"custom,omitempty"`
+	SoftDescriptor            string      `json:"soft_descriptor,omitempty"`
 }
