@@ -158,9 +158,9 @@ type FailedPaymentDetails struct {
 
 // https://developer.paypal.com/docs/api/subscriptions/v1/#definition-link_description
 type LinkDescription struct {
-	Href   string  `json:"href"`
-	Rel    LinkRel `json:"rel"`
-	Method string  `json:"method,omitempty"` // GET, POST, PUT, DELETE, HEAD, CONNECT, OPTIONS, PATCH
+	Href   string    `json:"href"`
+	Rel    E_LinkRel `json:"rel"`
+	Method string    `json:"method,omitempty"` // GET, POST, PUT, DELETE, HEAD, CONNECT, OPTIONS, PATCH
 }
 
 // https://developer.paypal.com/docs/api/subscriptions/v1/#definition-billing_cycle
