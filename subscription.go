@@ -2,6 +2,7 @@ package paypalsdk
 
 import (
 	"fmt"
+	"time"
 )
 
 const (
@@ -20,8 +21,8 @@ type CreateSubscriptionReq struct {
 	PlanID             string              `json:"plan_id"`
 	StartTime          string              `json:"start_time,omitempty"` // Default: Current time.
 	Quantity           string              `json:"quantity,omitempty"`   //  1<=len<=32,数字
-	ShippingAmount     *Money              `json:"shipping_amount,omitempty"`
-	Subscriber         *Subscriber         `json:"subscriber,omitempty"`
+	ShippingAmount     *Money              `json:"shipping_amount"`
+	Subscriber         *Subscriber         `json:"subscriber"`
 	AutoRenewal        bool                `json:"auto_renewal,omitempty"` // 订阅在计费周期完成后是否自动续订。
 	ApplicationContext *ApplicationContext `json:"application_context,omitempty"`
 }
@@ -36,20 +37,29 @@ const (
 	E_SUBSCRIPTION_STATUS_EXPIRED          E_SubscriptionStatus = "EXPIRED"
 )
 
+func (s E_SubscriptionStatus) Int() int {
+	if s == E_SUBSCRIPTION_STATUS_ACTIVE {
+		return 1
+	} else {
+		return 0
+	}
+}
+
 type Subscription struct {
 	Status           E_SubscriptionStatus `json:"status,omitempty"`
 	StatusChangeNote string               `json:"status_change_note,omitempty"` //订阅状态的原因或注释 1<=len<=128
-	StatusUpdateTime string               `json:"status_update_time,omitempty"` // eg: 2020-03-09T12:00:01
+	StatusUpdateTime time.Time            `json:"status_update_time,omitempty"` // eg: 2020-03-09T12:00:01
 	ID               string               `json:"id,omitempty"`                 // paypal生成的订阅 ID。
 	PlanID           string               `json:"plan_id,omitempty"`
-	StartTime        string               `json:"start_time,omitempty"` // eg: 2020-03-09T12:00:01
+	StartTime        time.Time            `json:"start_time,omitempty"` // eg: 2020-03-09T12:00:01
 	Quantity         string               `json:"quantity,omitempty"`   //  1<=len<=32,数字
 	ShippingAmount   *Money               `json:"shipping_amount,omitempty"`
 	Subscriber       *Subscriber          `json:"subscriber,omitempty"`
 	BillingInfo      *BillingInfo         `json:"billing_info,omitempty"`
-	CreateTime       string               `json:"create_time,omitempty"` // 只读
-	UpdateTime       string               `json:"update_tim,omitempty"`  // 只读
+	CreateTime       time.Time            `json:"create_time,omitempty"` // 只读
+	UpdateTime       time.Time            `json:"update_time,omitempty"` // 只读
 	Links            []*LinkDescription   `json:"links,omitempty"`
+	AutoRenewal      bool                 `json:"auto_renewal,omitempty"`
 }
 
 /*
@@ -62,6 +72,7 @@ type Subscription struct {
 
 func (c *Client) CreateSubscription(q *CreateSubscriptionReq) (*Subscription, error) {
 	req, err := c.NewRequest("POST", fmt.Sprintf("%s%s", c.APIBase, "/v1/billing/subscriptions"), q)
+	req.Header.Add("Prefer", "return=representation")
 	rsp := &Subscription{}
 	if err != nil {
 		return rsp, err
