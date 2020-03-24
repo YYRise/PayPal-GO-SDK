@@ -206,3 +206,19 @@ func (c *Client) ListTransactionsForSubscription(subID, startTime, endTime strin
 	err = c.SendWithAuth(req, rsp)
 	return rsp, err
 }
+
+/*
+// POST https://api.sandbox.paypal.com/v1/billing/subscriptions/I-BW452GLLEP1G/suspend
+// 204 No Content
+// Suspend subscription
+*/
+
+func (c *Client) SuspendSubscription(subId, reason string) error {
+	as := &UpdateSubscriptionReq{Reason: reason}
+	req, err := c.NewRequest("POST", fmt.Sprintf("%s%s/%s/suspend", c.APIBase, K_SUBSCRIPTION_API, subId), as)
+	if err != nil {
+		return err
+	}
+	err = c.SendWithAuth(req, nil)
+	return err
+}
